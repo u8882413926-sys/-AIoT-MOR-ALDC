@@ -1,0 +1,46 @@
+# ==============================================================================
+# .gitignore for Renesas e2 studio + FSP + FreeRTOS (AIoT-MOR-ALDC)
+# ==============================================================================
+
+# Build Output Directories
+Debug/
+Release/
+
+# Compiled Binary & Object Artifacts
+*.elf
+*.srec
+*.hex
+*.bin
+*.map
+*.o
+*.d
+*.a
+
+# J-Link Logs & Temporary Trace Files
+JLinkLog.log
+*.log
+
+# Scratch scripts & temporary debug artifacts
+scratch_*.py
+step*.txt
+jlink_test.cmd
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+env/
+
+# Operating System Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# User-specific Eclipse settings (optional - preserve core .settings/ if shared)
+.settings/org.eclipse.core.resources.prefs

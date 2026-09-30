@@ -1,0 +1,10 @@
+collapse/module.application.displaycameraMIPI.1149744620=false
+collapse/module.driver.display_on_glcdc.515511972=false
+collapse/module.driver.drw.1639734524=false
+collapse/module.driver.i2c_on_iic_master.419103836=false
+collapse/module.driver.mipi_csi.328765573=false
+collapse/module.driver.mipi_dsi.1852276466=false
+collapse/module.driver.vin.1246019537=false
+collapse/module.lvgl.lvgl.129891534=false
+collapse/module.middleware.rm_lvgl_port.1000843651=false
+eclipse.preferences.version=1
