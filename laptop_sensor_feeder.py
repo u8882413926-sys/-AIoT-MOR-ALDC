@@ -86,39 +86,75 @@ def find_jlink_port():
 
 
 def parse_dataset_file(filepath):
-    """Parses a text / Notepad file for temperature & humidity readings.
+    """Parses a text / Notepad / CSV file for temperature & humidity readings.
     Supports formats:
-      24.50, 55.0
-      24.50
-      T: 28.5, H: 62.0
-    Ignores blank lines and comments starting with '#' or '//'.
+      1. Standard 2-column: '24.50, 55.0' or 'T: 28.5, H: 62.0'
+      2. Single column: '24.50' (humidity auto-synthesized)
+      3. Intel Windows dataset CSV: 101 columns (window_id, sample_0 .. sample_99)
+    Ignores blank lines, headers, and comments starting with '#' or '//'.
     """
     if not os.path.exists(filepath):
-        # Also check current user directory
-        alt = os.path.join(os.path.expanduser("~"), filepath)
-        if os.path.exists(alt):
-            filepath = alt
+        # Also check current user directory and workspace
+        alt1 = os.path.join(os.path.expanduser("~"), filepath)
+        alt2 = os.path.join(os.path.dirname(os.path.abspath(__file__)), filepath)
+        if os.path.exists(alt1):
+            filepath = alt1
+        elif os.path.exists(alt2):
+            filepath = alt2
         else:
             return None, f"File not found: {filepath}"
 
     readings = []
+    last_valid_temp = 20.0
+
+    def synth_humidity(temp_c):
+        h = 40.0 + (temp_c - 17.0) * 2.5
+        return max(30.0, min(95.0, round(h, 1)))
+
     with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
         for line_no, raw_line in enumerate(f, 1):
             line = raw_line.strip()
             if not line or line.startswith("#") or line.startswith("//"):
                 continue
 
-            # Strip non-numeric characters if present
-            cleaned = line.replace("C", "").replace("%", "").replace("T:", "").replace("H:", "")
+            # Strip units and labels if present
+            cleaned = line.replace("C", "").replace("%", "").replace("T:", "").replace("H:", "").strip()
             parts = [p.strip() for p in cleaned.split(",") if p.strip()]
             if not parts:
                 parts = cleaned.split()
+            if not parts:
+                continue
 
-            if parts:
+            # Check if this is a header line (non-numeric parts)
+            try:
+                float(parts[0])
+            except ValueError:
+                continue
+
+            # Case A: Intel Windows CSV format (> 10 columns per row, e.g. 101 cols)
+            if len(parts) >= 20:
+                # Column 0 is window_id; columns 1..N are samples
+                for col_val in parts[1:]:
+                    try:
+                        temp = float(col_val)
+                        if temp >= 100.0 or temp < -40.0:  # Sensor fault marker
+                            temp = last_valid_temp
+                        else:
+                            last_valid_temp = temp
+                        hum = synth_humidity(temp)
+                        readings.append((temp, hum, f"{temp:.2f}, {hum:.1f}"))
+                    except ValueError:
+                        continue
+            # Case B: Standard 1 or 2-column sensor text format
+            else:
                 try:
                     temp = float(parts[0])
-                    hum = float(parts[1]) if len(parts) > 1 else 55.0
-                    readings.append((temp, hum, line))
+                    if temp >= 100.0 or temp < -40.0:
+                        temp = last_valid_temp
+                    else:
+                        last_valid_temp = temp
+                    hum = float(parts[1]) if len(parts) > 1 else synth_humidity(temp)
+                    readings.append((temp, hum, f"{temp:.2f}, {hum:.1f}"))
                 except ValueError:
                     continue
 
